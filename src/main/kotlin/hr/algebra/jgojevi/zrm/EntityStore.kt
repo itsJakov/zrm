@@ -19,5 +19,10 @@ class EntityStore<E : Any> internal constructor(private val entityClass: KClass<
     fun fetchAll(sql: String) = QueryExec.all(database.connection, sql, entityClass)
     fun fetchOne(sql: String) = QueryExec.one(database.connection, sql, entityClass)
 
+    // - Change Tracking
+    fun add(entity: E) {
+        database.add(entity)
+    }
+
 
 }

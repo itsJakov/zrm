@@ -1,13 +1,14 @@
 package hr.algebra.jgojevi.zrm
 
 import kotlin.reflect.KClass
+import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
-class EntityColumn(private val property: KProperty<*>, private val table: EntityTable<*>) {
+class EntityColumn(internal val property: KMutableProperty<*>, private val table: EntityTable<*>) {
 
     val isPrimaryKey: Boolean by lazy { property.hasAnnotation<Key>() }
 
@@ -31,6 +32,7 @@ class EntityTable<E : Any>(internal val entityClass: KClass<E>) {
 
         entityClass.memberProperties
             .filter { prop -> constructorProperties.any { it.name == prop.name } }
+            .map { it as KMutableProperty<*> }
             .map { EntityColumn(it, this) }
     }
 

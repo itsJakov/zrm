@@ -11,7 +11,7 @@ import kotlin.reflect.full.primaryConstructor
 internal object QueryExec {
 
     // TODO: This can fail in many many many different fun ways
-    fun <E : Any> decode(entityClass: KClass<E>, rs: ResultSet): E {
+    private fun <E : Any> decode(entityClass: KClass<E>, rs: ResultSet): E {
         val constructor = entityClass.primaryConstructor!!
         val args: Map<KParameter, Any> = constructor.parameters.associateWith { rs.getObject(it.name!!) }
 

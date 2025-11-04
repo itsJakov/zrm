@@ -30,50 +30,18 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val allThings = database.things.include(Things::student).fetchAll()
+
+    val newStudent = Student(
+        student_id = 0,
+        first_name = "Jakov",
+        last_name = "GZ",
+        enrollment_year = 2023,
+    )
+
+    database.students.add(newStudent)
+    database.save()
 
     val allStudents = database.students.all()
 
-    val ivys = database.students
-        .where((Student::first_name eq "Ivy") and (Student::last_name eq "Brown"))
-        .fetchAll()
-
-    val noEnrollment = database.students
-        .where(Student::enrollment_year eq null)
-        .fetchOne()
-
-    val after2022 = database.students
-        .where(Student::enrollment_year gt 2022)
-        .fetchAll()
-
-
-
     println()
-
-    /*val expr1 =
-        BinaryExpr(
-            "or",
-            BinaryExpr(
-                "and",
-                BinaryExpr(
-                    ">=",
-                    ColumnExpr(Student::class, Student::enrollment_year),
-                    NumberConst(2020)
-                ),
-                EqualExpr(
-                    ColumnExpr(Student::class, Student::last_name),
-                    StringConst(null),
-                    negated = true
-                )
-            ),
-            not(
-                EqualExpr(
-                    ColumnExpr(Student::class, Student::student_id),
-                    NumberConst(12)
-                )
-            )
-        )
-
-    val expr2 =
-        ((Student::enrollment_year gte 2020) and (Student::last_name neq null)) or not((Student::student_id eq 12))*/
 }
