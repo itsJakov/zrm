@@ -39,9 +39,16 @@ fun main() {
     )
 
     database.students.add(newStudent)
-    database.save()
+    database.students.save()
 
-    val allStudents = database.students.all()
+    newStudent.last_name = "Spojnica"
+    database.students.save()
+
+    database.students.remove(newStudent)
+    database.students.save()
+
+//    database.save()
+//    val allStudents = database.students.all()
 
     println()
 }

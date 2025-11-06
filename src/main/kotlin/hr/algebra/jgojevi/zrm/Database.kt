@@ -1,7 +1,7 @@
 package hr.algebra.jgojevi.zrm
 
 import java.sql.DriverManager
-import java.util.LinkedList
+import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.full.memberProperties
@@ -29,10 +29,15 @@ open class Database(connectionString: String) {
 
     private val trackedEntities = mutableListOf<Any>()
     private val insertQueue = LinkedList<Any>()
+    private val removeQueue = LinkedList<Any>()
+
 
     fun add(entity: Any) {
         trackedEntities.add(entity)
         insertQueue.add(entity)
+    }
+
+    fun remove(entity: Any) {
     }
 
     fun save() {
