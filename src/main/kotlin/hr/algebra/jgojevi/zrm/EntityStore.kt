@@ -30,6 +30,11 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
         return entry
     }
 
+    fun _remove(e: E) {
+        // This method should probably attach the entity if it wasn't already
+        attached.firstOrNull { it.entity === e }?.state = Entry.State.DELETED
+    }
+
     fun _detectChanges() {
         attached.forEach { it.detectChanges() }
     }
@@ -43,7 +48,10 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
                     DMLExec.update(entry.entity, entry.changedColumns, database.connection)
                     entry.reset()
                 }
-                Entry.State.DELETED -> TODO()
+                Entry.State.DELETED -> {
+                    DMLExec.delete(entry.entity, database.connection)
+                    // probably needs to detach the entity
+                }
             }
         }
     }
@@ -53,6 +61,6 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
         = DQLExec.all(table, sql, params, database.connection)
 
     fun fetchOne(sql: String, params: Sequence<Any> = emptySequence())
-            = DQLExec.one(table, sql, params, database.connection)
+        = DQLExec.one(table, sql, params, database.connection)
 
 }

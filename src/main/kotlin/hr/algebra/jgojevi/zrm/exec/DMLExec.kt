@@ -23,6 +23,15 @@ internal object DMLExec {
         }
     }
 
-//    fun delete() {}
+    fun <E : Any> delete(entity: E, conn: Connection) {
+        val table = DBTable.of(entity)
+        val sql = "delete from \"${table.name}\" where \"${table.primaryKey.name}\" = ?"
+        println("[DMLExec] $sql")
+
+        conn.prepareStatement(sql).use { stmt ->
+            stmt.setObject(1, table.primaryKey.get(entity))
+            stmt.executeUpdate()
+        }
+    }
 
 }

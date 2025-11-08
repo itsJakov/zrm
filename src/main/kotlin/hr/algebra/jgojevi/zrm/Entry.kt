@@ -10,7 +10,6 @@ class Entry internal constructor(val entity: Any) {
         UNCHANGED, INSERT, UPDATED, DELETED
     }
     var state = State.UNCHANGED
-        private set
 
     private var values = copyValues()
     internal var changedColumns = emptyList<DBColumn<Any, *>>()
