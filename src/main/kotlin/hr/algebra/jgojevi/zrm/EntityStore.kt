@@ -65,10 +65,10 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
     }
 
     // - SQL Calls
-    fun fetchAll(sql: String, params: Sequence<Any> = emptySequence())
-        = DQLExec.all(table, sql, params, database.connection)
+    fun fetchAll(sql: String, vararg params: Any)
+        = DQLExec.all(table, sql, params.asSequence(), database.connection)
 
-    fun fetchOne(sql: String, params: Sequence<Any> = emptySequence())
-        = DQLExec.one(table, sql, params, database.connection)
+    fun fetchOne(sql: String, vararg params: Any)
+        = DQLExec.one(table, sql, params.asSequence(), database.connection)
 
 }
