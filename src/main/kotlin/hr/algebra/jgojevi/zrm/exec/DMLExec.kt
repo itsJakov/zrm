@@ -3,10 +3,31 @@ package hr.algebra.jgojevi.zrm.exec
 import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
 import java.sql.Connection
+import java.sql.PreparedStatement
 
 internal object DMLExec {
 
-//    fun insert() {}
+    fun <E : Any> insert(entity: E, conn: Connection) {
+        val table = DBTable.of(entity)
+        val columns = table.columns.filter { !it.isPrimaryKey }
+
+        val placeholders = Array(columns.size) { "?" }.joinToString()
+        val sql = "insert into \"${table.name}\" (${columns.joinToString { "\"${it.name}\"" }}) values ($placeholders)"
+        println("[DMLExec] $sql")
+
+        conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS).use { stmt ->
+            for ((i, column) in columns.withIndex()) {
+                stmt.setObject(i + 1, column.get(entity))
+            }
+
+            stmt.executeUpdate()
+            stmt.generatedKeys.use { rs ->
+                if (rs.next()) {
+                    table.primaryKey.set(entity, rs.getObject(1))
+                }
+            }
+        }
+    }
 
     fun <E : Any> update(entity: E, changedColumns: List<DBColumn<E, *>>, conn: Connection) {
         val table = DBTable.of(entity)

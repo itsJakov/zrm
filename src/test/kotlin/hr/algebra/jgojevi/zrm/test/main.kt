@@ -9,7 +9,7 @@ import hr.algebra.jgojevi.zrm.schema.Table
 data class Student(
     @Key
     @Column("student_id")
-    var id: Int,
+    var id: Int = 0,
 
     @Column("first_name")
     var firstName: String?,
@@ -44,13 +44,21 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val student = database.students.find(113)!!//.fetchOne()!!
-    database.students._attach(student)
+    val student = Student(
+        firstName = "John",
+        lastName = "Doe",
+        enrollmentYear = 1000,
+    )
 
-    student.lastName = "spojnica"
-
+    database.students._add(student)
     database.students._detectChanges()
     database.students._saveChanges()
+
+    student.lastName = "Pork"
+    database.students._detectChanges()
+    database.students._saveChanges()
+
+    database.students._remove(student)
     database.students._detectChanges()
     database.students._saveChanges()
 

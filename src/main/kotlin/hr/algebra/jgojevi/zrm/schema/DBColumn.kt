@@ -1,5 +1,6 @@
 package hr.algebra.jgojevi.zrm.schema
 
+import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
@@ -30,5 +31,6 @@ class DBColumn<E : Any, T> private constructor(internal val property: KProperty1
     val isPrimaryKey: Boolean by lazy { property.hasAnnotation<Key>() }
 
     fun get(entity: E): T = property.get(entity)
+    fun set(entity: E, value: Any) = (property as KMutableProperty1<E, T>).set(entity, value as T) // bad probably
 
 }

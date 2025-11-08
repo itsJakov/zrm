@@ -24,6 +24,11 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
     // - Change Tracking demo
     private val attached = mutableListOf<Entry>()
 
+    fun _add(e: E) {
+        val entry = _attach(e)
+        entry.state = Entry.State.INSERTED
+    }
+
     fun _attach(e: E): Entry {
         val entry = Entry(e)
         attached.add(entry)
@@ -43,7 +48,10 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
         for (entry in attached) {
             when (entry.state) {
                 Entry.State.UNCHANGED -> continue
-                Entry.State.INSERT -> TODO()
+                Entry.State.INSERTED -> {
+                    DMLExec.insert(entry.entity, database.connection)
+                    entry.reset()
+                }
                 Entry.State.UPDATED -> {
                     DMLExec.update(entry.entity, entry.changedColumns, database.connection)
                     entry.reset()

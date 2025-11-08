@@ -7,7 +7,7 @@ import hr.algebra.jgojevi.zrm.schema.DBTable
 class Entry internal constructor(val entity: Any) {
 
     enum class State {
-        UNCHANGED, INSERT, UPDATED, DELETED
+        UNCHANGED, INSERTED, UPDATED, DELETED
     }
     var state = State.UNCHANGED
 
@@ -17,7 +17,6 @@ class Entry internal constructor(val entity: Any) {
 
     private fun copyValues(): Map<DBColumn<Any, *>, Any?>
         = DBTable.of(entity).columns.associateWith { it.get(entity) }
-
 
     fun detectChanges() {
         if (state != State.UNCHANGED) return
