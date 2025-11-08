@@ -52,8 +52,9 @@ class ConstExpr(private val value: Any?) : Expr {
     override fun params() = if (value == null) emptySequence() else sequenceOf(value)
 }
 
-class ColumnExpr <E : Any, T> (private val property: KProperty1<E, T>): Expr {
-    override fun sql() = DBColumn.of(property).qualifiedName
+class ColumnExpr <E : Any, T> (private val column: DBColumn<E, T>): Expr {
+    constructor (property: KProperty1<E, T>) : this(DBColumn.of(property))
+    override fun sql() = column.qualifiedName
 }
 
 infix fun <E : Any> KProperty1<E, Boolean?>.eq(value: Boolean?)

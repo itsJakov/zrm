@@ -16,6 +16,10 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
     fun where(expr: BoolConvertableExpr) = query().where(expr)
     fun include(property: KProperty1<E, *>) = query().include(property)
 
+    fun find(key: Any?): E?
+        = where(EqualExpr(ColumnExpr(table.primaryKey), ConstExpr(key)))
+        .fetchOne()
+
     // - SQL Calls
     fun fetchAll(sql: String, params: Sequence<Any> = emptySequence())
         = DQLExec.all(table, sql, params, database.connection)
