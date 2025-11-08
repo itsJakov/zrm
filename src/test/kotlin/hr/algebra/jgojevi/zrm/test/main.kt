@@ -44,46 +44,15 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val allThings = database.things.include(Things::student).fetchAll()
+    val student = database.students.find(113)!!//.fetchOne()!!
+    database.students._attach(student)
 
-    val allStudents = database.students.all()
+    student.lastName = "spojnica"
 
-    val ivys = database.students
-        .where((Student::firstName eq "Ivy") and (Student::lastName eq "Brown"))
-        .fetchAll()
-
-    val noEnrollment = database.students
-        .where(Student::enrollmentYear eq null)
-        .fetchOne()
-
-    val after2022 = database.students
-        .where(Student::enrollmentYear gt 2022)
-        .fetchAll()
-
-    val e1 = BinaryExpr(
-        "or",
-        BinaryExpr(
-            "and",
-            BinaryExpr(
-                ">=",
-                ColumnExpr(Student::enrollmentYear),
-                ConstExpr(2020)
-            ),
-            EqualExpr(
-                ColumnExpr(Student::lastName),
-                ConstExpr(null),
-                negated = true
-            )
-        ),
-        NotExpr(
-            EqualExpr(
-                ColumnExpr(Student::id),
-                ConstExpr(12)
-            )
-        )
-    )
-
-    e1._debugPrint()
+    database.students._detectChanges()
+    database.students._saveChanges()
+    database.students._detectChanges()
+    database.students._saveChanges()
 
     println()
 }

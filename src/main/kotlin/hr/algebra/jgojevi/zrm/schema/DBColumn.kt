@@ -29,4 +29,6 @@ class DBColumn<E : Any, T> private constructor(internal val property: KProperty1
 
     val isPrimaryKey: Boolean by lazy { property.hasAnnotation<Key>() }
 
+    fun get(entity: E): T = property.get(entity)
+
 }

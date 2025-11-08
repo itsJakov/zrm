@@ -10,7 +10,7 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
     companion object {
         private val tables = mutableMapOf<KClass<*>, DBTable<*>>()
 
-        fun <E : Any> of(entityClass: KClass<E>): DBTable<E>
+        fun <E : Any> of(entityClass: KClass<out E>): DBTable<E>
             = synchronized(tables) {
                 tables.getOrPut(entityClass) {
                     DBTable(entityClass)
@@ -18,7 +18,7 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
             }
 
         // Convenience method
-        //fun <E : Any> of(entity: E) = of<E>(entity::class)
+        fun <E : Any> of(entity: E) = of<E>(entity::class)
     }
 
     val name: String by lazy { tableClass.findAnnotation<Table>()?.name ?: tableClass.simpleName!! }
