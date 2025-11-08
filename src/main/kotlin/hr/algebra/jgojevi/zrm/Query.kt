@@ -2,6 +2,8 @@ package hr.algebra.jgojevi.zrm
 
 import hr.algebra.jgojevi.zrm.exec.DQLExec
 import hr.algebra.jgojevi.zrm.schema.DBTable
+import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
 
 class Query<E : Any> internal constructor(val table: DBTable<E>, val database: Database) {
 
@@ -35,6 +37,19 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     fun where(expr: BoolConvertableExpr): Query<E> {
         where = expr.sql()
         whereParams = expr.params()
+        return this
+    }
+
+    fun include(property: KProperty1<E, *>): Query<E> {
+        val other = DBTable.of(property.returnType.classifier as KClass<*>)
+
+        // TODO: HORRIBLE way of finding the FK column name
+        val foreignKeyColumnName = property.name + "_id"
+
+        // TODO: This only supports one join!
+        select += ", ${other.columns.joinToString() { it.qualifiedName }}"
+        join = "left join \"${other.name}\" on \"${table.name}\".\"$foreignKeyColumnName\" = ${other.primaryKey.qualifiedName}"
+
         return this
     }
 

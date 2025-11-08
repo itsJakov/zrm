@@ -24,6 +24,12 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
     val name: String by lazy { tableClass.findAnnotation<Table>()?.name ?: tableClass.simpleName!! }
     val columns: List<DBColumn<E, *>>
 
+    val primaryKey: DBColumn<E, *> by lazy {
+        val pk = columns.firstOrNull { it.isPrimaryKey }
+        assert(pk != null) { "${tableClass.simpleName} must be have one @Key property." }
+        return@lazy pk!!
+    }
+
     init {
         assert(tableClass.isData) { "${tableClass.simpleName} is not a data class." }
 
