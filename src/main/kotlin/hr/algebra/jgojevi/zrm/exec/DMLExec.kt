@@ -23,7 +23,8 @@ internal object DMLExec {
             stmt.executeUpdate()
             stmt.generatedKeys.use { rs ->
                 if (rs.next()) {
-                    table.primaryKey.set(entity, rs.getObject(1))
+                    // Unchecked cast because DBColumn<E, *> prohibits using the setter
+                    (table.primaryKey as DBColumn<E, Any>).set(entity, rs.getObject(1))
                 }
             }
         }

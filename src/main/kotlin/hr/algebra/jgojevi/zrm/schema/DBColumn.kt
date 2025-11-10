@@ -31,6 +31,6 @@ class DBColumn<E : Any, T> private constructor(internal val property: KProperty1
     val isPrimaryKey: Boolean by lazy { property.hasAnnotation<Key>() }
 
     fun get(entity: E): T = property.get(entity)
-    fun set(entity: E, value: Any) = (property as KMutableProperty1<E, T>).set(entity, value as T) // bad probably
+    fun set(entity: E, value: T) = (property as KMutableProperty1<E, T>).set(entity, value) // TODO: Should be a KMutableProperty from the start
 
 }
