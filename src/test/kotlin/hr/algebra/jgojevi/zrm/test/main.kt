@@ -22,7 +22,7 @@ data class Student(
 )
 
 @Table("things")
-data class Things(
+data class Thing(
     @Key
     @Column("thing_id")
     var id: Int,
@@ -38,29 +38,16 @@ data class Things(
 
 class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&password=Pa55w.rd") {
     lateinit var students: EntityStore<Student>
-    lateinit var things: EntityStore<Things>
+    lateinit var things: EntityStore<Thing>
 }
 
 fun main() {
     val database = AppDatabase()
 
-    val student = Student(
-        firstName = "John",
-        lastName = "Doe",
-        enrollmentYear = 1000,
-    )
-
-    database.students._add(student)
-    database.students._detectChanges()
-    database.students._saveChanges()
-
-    student.lastName = "Pork"
-    database.students._detectChanges()
-    database.students._saveChanges()
-
-    database.students._remove(student)
-    database.students._detectChanges()
-    database.students._saveChanges()
+    val allStudent = database.students
+        .where(Student::enrollmentYear gt 2020)
+        .orderBy(+Student::enrollmentYear, -Student::lastName)
+        .fetchAll()
 
     println()
 }

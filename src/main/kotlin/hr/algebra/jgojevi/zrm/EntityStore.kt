@@ -16,6 +16,7 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
     fun all() = query().fetchAll()
     fun where(expr: BoolConvertableExpr) = query().where(expr)
     fun include(property: KProperty1<E, *>) = query().include(property)
+    fun <T : Any> orderBy(vararg columns: OrderedColumn) = query().orderBy(*columns)
 
     fun find(key: Any?): E?
         = where(EqualExpr(ColumnExpr(table.primaryKey), ConstExpr(key)))

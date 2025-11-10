@@ -12,6 +12,7 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     private var from: String? = null
     private var join: String? = null
     private var where: String? = null
+    private var orderBy: String? = null
 
     private var whereParams: Sequence<Any> = emptySequence()
 
@@ -26,6 +27,7 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
         if (from != null) { sql.append("from $from ") }
         if (join != null) { sql.append("$join ") }
         if (where != null) { sql.append("where $where ") }
+        if (orderBy != null) { sql.append("order by $orderBy ") }
 
         return sql.toString()
     }
@@ -50,6 +52,14 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
         select += ", ${other.columns.joinToString() { it.qualifiedName }}"
         join = "left join \"${other.name}\" on \"${table.name}\".\"$foreignKeyColumnName\" = ${other.primaryKey.qualifiedName}"
 
+        return this
+    }
+
+    fun orderBy(vararg columns: OrderedColumn): Query<E> {
+        orderBy = columns.joinToString(", ") {
+            val order = if (it.desc) "desc" else "asc"
+            "${it.column.qualifiedName} $order"
+        }
         return this
     }
 

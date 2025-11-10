@@ -89,6 +89,13 @@ infix fun <E : Any> KProperty1<E, Number?>.lt(value: Number?)
 infix fun <E : Any> KProperty1<E, Number?>.lte(value: Number?)
         = BinaryExpr("<=", ColumnExpr(this), ConstExpr(value))
 
+
 infix fun Expr.and(other: Expr) = BinaryExpr("and", this, other)
 infix fun Expr.or(other: Expr) = BinaryExpr("or", this, other)
 fun not(expr: Expr) = NotExpr(expr)
+
+
+class OrderedColumn(internal val column: DBColumn<*, *>, internal val desc: Boolean)
+
+operator fun <E : Any> KProperty1<E, *>.unaryPlus() = OrderedColumn(DBColumn.of(this), desc = false)
+operator fun <E : Any> KProperty1<E, *>.unaryMinus() = OrderedColumn(DBColumn.of(this), desc = true)
