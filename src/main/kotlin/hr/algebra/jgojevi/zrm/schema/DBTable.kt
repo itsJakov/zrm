@@ -1,6 +1,7 @@
 package hr.algebra.jgojevi.zrm.schema
 
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
@@ -23,6 +24,13 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
 
     val name: String by lazy { tableClass.findAnnotation<Table>()?.name ?: tableClass.simpleName!! }
     val columns: List<DBColumn<E, *>>
+
+    // Navigation properties mapped to their foreign key column
+    val navigationProperties: Map<KProperty1<E, *>, DBColumn<E, *>> by lazy {
+        columns.filter { it.foreignKeyPropertyName != null }.associateBy { col ->
+            tableClass.memberProperties.first { it.name == col.foreignKeyPropertyName }
+        }
+    }
 
     val primaryKey: DBColumn<E, *> by lazy {
         val pk = columns.firstOrNull { it.isPrimaryKey }

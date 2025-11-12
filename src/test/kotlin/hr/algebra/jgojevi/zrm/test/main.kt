@@ -2,6 +2,8 @@ package hr.algebra.jgojevi.zrm.test
 
 import hr.algebra.jgojevi.zrm.*
 import hr.algebra.jgojevi.zrm.schema.Column
+import hr.algebra.jgojevi.zrm.schema.DBTable
+import hr.algebra.jgojevi.zrm.schema.ForeignKey
 import hr.algebra.jgojevi.zrm.schema.Key
 import hr.algebra.jgojevi.zrm.schema.Table
 
@@ -21,33 +23,46 @@ data class Student(
     var enrollmentYear: Int?,
 )
 
-@Table("things")
-data class Thing(
+@Table("artists")
+data class Artist(
     @Key
-    @Column("thing_id")
-    var id: Int,
+    @Column("artist_id")
+    var id: Int = 0,
 
-    @Column("thing_name")
-    var thingName: String?,
+    @Column("name")
+    var name: String
+)
 
-    @Column("student_id")
-    var studentId: Int?,
+@Table("albums")
+data class Album(
+    @Key
+    @Column("album_id")
+    var id: Int = 0,
+
+    @Column("title")
+    var name: String,
+
+    @Column("artist_id")
+    @ForeignKey("artist")
+    var artistId: Int
 ) {
-    var student: Student? = null
+    var artist: Artist? = null // For now, navigation properties have to be defined outside the primary constructor. Kinda ugly
 }
 
 class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&password=Pa55w.rd") {
     lateinit var students: EntityStore<Student>
-    lateinit var things: EntityStore<Thing>
+    lateinit var artists: EntityStore<Artist>
+    lateinit var albums: EntityStore<Album>
 }
 
 fun main() {
     val database = AppDatabase()
 
-    val allStudent = database.students
-        .where(Student::enrollmentYear gt 2020)
-        .orderBy(+Student::enrollmentYear, -Student::lastName)
+    val allAlbums = database.albums
+        .include(Album::artist)
         .fetchAll()
+
+    val ok = DBTable.of(Album::class).navigationProperties
 
     println()
 }

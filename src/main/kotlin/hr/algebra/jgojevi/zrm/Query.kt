@@ -45,8 +45,7 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     fun include(property: KProperty1<E, *>): Query<E> {
         val other = DBTable.of(property.returnType.classifier as KClass<*>)
 
-        // TODO: HORRIBLE way of finding the FK column name
-        val foreignKeyColumnName = property.name + "_id"
+        val foreignKeyColumnName = table.navigationProperties[property]?.name ?: throw Exception("${property.name} is not a navigation property")
 
         // TODO: This only supports one join!
         select += ", ${other.columns.joinToString() { it.qualifiedName }}"

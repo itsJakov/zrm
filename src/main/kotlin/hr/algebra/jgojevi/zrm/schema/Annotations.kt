@@ -14,4 +14,4 @@ annotation class Key
 
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class ForeignKey(val column: String)
+annotation class ForeignKey(val property: String)
