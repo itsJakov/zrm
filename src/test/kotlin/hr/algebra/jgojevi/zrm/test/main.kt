@@ -62,7 +62,5 @@ fun main() {
         .include(Album::artist)
         .fetchAll()
 
-    val ok = DBTable.of(Album::class).navigationProperties
-
     println()
 }

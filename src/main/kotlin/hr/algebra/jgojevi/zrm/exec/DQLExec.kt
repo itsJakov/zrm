@@ -7,29 +7,23 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.primaryConstructor
 
 internal object DQLExec {
 
     // TODO: This can fail in many many many different fun ways
-    private fun <E : Any> decode(table: DBTable<E>, rs: ResultSet): E {
-        val constructor = table.tableClass.primaryConstructor!!
-        val params: Map<KParameter, Any> = constructor.parameters
-            .associateWith { param ->
-                // TODO: This code is slooooowww
-                val column = table.columns.first { it.property.name == param.name }
-                rs.getObject(column.name)
-            }
+    private fun <E : Any> decode(table: DBTable<E>, rs: BetterResultSet): E {
+        val params: Map<KParameter, Any?> = table.constructorParameters
+            .mapValues { (_, column) -> rs.getObject(column) }
 
-        val entity = constructor.callBy(params)
+        val entity = table.constructor.callBy(params)
 
         // Navigation properties
-        for (navigationProperty in table.tableClass.memberProperties) {
+        for ((navigationProperty, foreignKey) in table.navigationProperties) {
             if (navigationProperty !is KMutableProperty<*>) { continue } // Navigation properties have to be a var (not val)
             val otherClass = navigationProperty.returnType.classifier as KClass<*>
-            if (!otherClass.isData) { continue } // Entities are always data classes
             val table = DBTable.of(otherClass)
 
+            // TODO: Not handling to-many relationships
             try {
                 val navEntity = decode(table, rs)
                 navigationProperty.setter.call(entity, navEntity)
@@ -49,13 +43,8 @@ internal object DQLExec {
                 stmt.setObject(i+1, o)
             }
 
-            val entities = mutableListOf<E>()
-            stmt.executeQuery().use { rs ->
-                while (rs.next()) {
-                    entities.add(decode(table, rs))
-                }
-            }
-            return entities
+            return stmt.executeBetterQuery()
+                .collect { decode(table, it) }
         }
     }
 
@@ -67,12 +56,8 @@ internal object DQLExec {
                 stmt.setObject(i+1, o)
             }
 
-            stmt.executeQuery().use { rs ->
-                if (rs.next()) {
-                    return decode(table, rs)
-                }
-            }
-            return null
+            return stmt.executeBetterQuery()
+                .mapOne { decode(table, it) }
         }
     }
 
