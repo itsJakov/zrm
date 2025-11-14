@@ -1,6 +1,7 @@
 package hr.algebra.jgojevi.zrm
 
 import hr.algebra.jgojevi.zrm.exec.DQLExec
+import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
@@ -43,13 +44,27 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     }
 
     fun include(property: KProperty1<E, *>): Query<E> {
-        val other = DBTable.of(property.returnType.classifier as KClass<*>)
-
-        val foreignKeyColumnName = table.navigationProperties[property]?.name ?: throw Exception("${property.name} is not a navigation property")
-
         // TODO: This only supports one join!
-        select += ", ${other.columns.joinToString() { it.qualifiedName }}"
-        join = "left join \"${other.name}\" on \"${table.name}\".\"$foreignKeyColumnName\" = ${other.primaryKey.qualifiedName}"
+        if (join != null) throw Exception("Only one Join supported for now")
+
+        val clazz = property.returnType.classifier as KClass<*>
+
+        val other: DBTable<*>
+        val foreignKey: DBColumn<*, *>
+
+        if (clazz == List::class) { // To many
+            other = DBTable.of(property.returnType.arguments.first().type?.classifier as KClass<*>)
+            foreignKey = other.foreignKeyByTable[table] ?: throw Exception("${property.name} is not a navigation property")
+
+            join = "left join \"${other.name}\" on ${table.primaryKey.qualifiedName} = ${foreignKey.qualifiedName}"
+        } else { // To one
+            other = DBTable.of(clazz)
+            foreignKey = table.navigationProperties[property] ?: throw Exception("${property.name} is not a navigation property")
+
+            join = "left join \"${other.name}\" on ${foreignKey.qualifiedName} = ${other.primaryKey.qualifiedName}"
+        }
+
+        select += ", ${other.columns.joinToString { it.qualifiedName }}"
 
         return this
     }

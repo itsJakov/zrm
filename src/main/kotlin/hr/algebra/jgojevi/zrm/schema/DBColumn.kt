@@ -30,7 +30,7 @@ class DBColumn<E : Any, T> private constructor(internal val property: KProperty1
 
     val isPrimaryKey: Boolean by lazy { property.hasAnnotation<Key>() }
 
-    val foreignKeyPropertyName: String? by lazy { property.findAnnotation<ForeignKey>()?.property }
+    internal val foreignKeyPropertyName: String? by lazy { property.findAnnotation<ForeignKey>()?.property }
     val isForeignKey: Boolean = foreignKeyPropertyName != null
 
     fun get(entity: E): T = property.get(entity)

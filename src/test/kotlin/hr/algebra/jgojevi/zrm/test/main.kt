@@ -1,8 +1,8 @@
 package hr.algebra.jgojevi.zrm.test
 
-import hr.algebra.jgojevi.zrm.*
+import hr.algebra.jgojevi.zrm.Database
+import hr.algebra.jgojevi.zrm.EntityStore
 import hr.algebra.jgojevi.zrm.schema.Column
-import hr.algebra.jgojevi.zrm.schema.DBTable
 import hr.algebra.jgojevi.zrm.schema.ForeignKey
 import hr.algebra.jgojevi.zrm.schema.Key
 import hr.algebra.jgojevi.zrm.schema.Table
@@ -31,7 +31,9 @@ data class Artist(
 
     @Column("name")
     var name: String
-)
+) {
+    var albums: List<Album>? = null
+}
 
 @Table("albums")
 data class Album(
@@ -60,6 +62,10 @@ fun main() {
 
     val allAlbums = database.albums
         .include(Album::artist)
+        .fetchAll()
+
+    val allArtists = database.artists
+        .include(Artist::albums)
         .fetchAll()
 
     println()

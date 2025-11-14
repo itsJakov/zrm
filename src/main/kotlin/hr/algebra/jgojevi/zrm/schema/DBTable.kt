@@ -35,9 +35,23 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
     }
 
     // Navigation properties mapped to their foreign key column
+    // Example: Album::artist -> DBColumn(table=Album, name="artist_id")
+    // Used by the query builder to find out what foreign key column is mapped to the navigation property,
+    //  when doing a to-one navigation property
     internal val navigationProperties: Map<KProperty1<E, *>, DBColumn<E, *>> by lazy {
         columns.filter { it.foreignKeyPropertyName != null }.associateBy { col ->
             tableClass.memberProperties.first { it.name == col.foreignKeyPropertyName }
+        }
+    }
+
+    // Tables mapped to their foreign key column
+    // Example: DBTable(Artist) -> DBColumn(table=Album, name="artist_id")
+    // Used by the query builder to find out what foreign key column is referencing the given table,
+    // when doing a to-many navigation property
+    // This whole system could fail if a table has multiple foreign keys to the same table
+    internal val foreignKeyByTable: Map<DBTable<*>, DBColumn<E, *>> by lazy { // messy
+        navigationProperties.mapKeys { (property, column) ->
+            DBTable.of(property.returnType.classifier as KClass<*>)
         }
     }
 
