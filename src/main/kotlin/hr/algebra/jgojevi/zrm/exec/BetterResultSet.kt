@@ -14,6 +14,12 @@ internal class BetterResultSet(private val resultSet: ResultSet) : AutoCloseable
         = (1 .. metadata.columnCount)
             .associateBy { "\"${resultSet.metaData.getTableName(it)}\".\"${resultSet.metaData.getColumnName(it)}\"" }
 
+    fun forEach(block: (BetterResultSet) -> Unit) {
+        while (resultSet.next()) {
+            block(this)
+        }
+    }
+
     fun <T> collect(block: (BetterResultSet) -> T): List<T> {
         val list = mutableListOf<T>()
         while (resultSet.next()) {
@@ -28,6 +34,9 @@ internal class BetterResultSet(private val resultSet: ResultSet) : AutoCloseable
         }
         return null
     }
+
+    fun containsColumn(column: DBColumn<*, *>): Boolean
+        = columnsByQualifiedName.containsKey(column.qualifiedName)
 
     fun getObject(column: DBColumn<*, *>): Any?
         = resultSet.getObject(columnsByQualifiedName[column.qualifiedName]!!)

@@ -32,7 +32,7 @@ data class Artist(
     @Column("name")
     var name: String
 ) {
-    var albums: List<Album>? = null
+    var albums: MutableList<Album>? = null
 }
 
 @Table("albums")
@@ -64,7 +64,9 @@ fun main() {
         .include(Album::artist)
         .fetchAll()
 
-    val allArtists = database.artists
+    val allArtists = database.artists.all()
+
+    val allArtistsWithAlbums = database.artists
         .include(Artist::albums)
         .fetchAll()
 
