@@ -51,24 +51,57 @@ data class Album(
     var artist: Artist? = null // For now, navigation properties have to be defined outside the primary constructor. Kinda ugly
 }
 
+@Table("songs")
+data class Song(
+    @Key
+    @Column("song_id")
+    var id: Int = 0,
+
+    @Column("album_id")
+    @ForeignKey("album")
+    var albumId: Int,
+
+    @Column("title")
+    var title: String,
+
+    @Column("length")
+    var length: Int
+) {
+    var album: Album? = null
+}
+
 class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&password=Pa55w.rd") {
     lateinit var students: EntityStore<Student>
     lateinit var artists: EntityStore<Artist>
     lateinit var albums: EntityStore<Album>
+    lateinit var songs: EntityStore<Song>
 }
 
 fun main() {
     val database = AppDatabase()
 
-    val allAlbums = database.albums
+    val songs = database.songs
+        .query()
+        .include(Song::album)
         .include(Album::artist)
         .all()
 
-    val allArtists = database.artists.all()
+    // Album -> one Artist
+//    val allAlbums = database.albums
+//        .include(Album::artist)
+//        .all()
+//
+//    // Song -> one Album -> one Artist
+//    val allSongs = database.songs
+//        .include(Song::album)
+//        .include(Album::artist)
+//        .all()
+//
+//    // Artist -> many Albums
+//    val allArtists = database.artists
+//        .include(Artist::albums)
+//        .all()
 
-    val allArtistsWithAlbums = database.artists
-        .include(Artist::albums)
-        .all()
 
     println()
 }

@@ -43,9 +43,10 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
         return this
     }
 
-    fun include(property: KProperty1<E, *>): Query<E> {
-        // TODO: This only supports one join!
-        if (join != null) throw Exception("Only one Join supported for now")
+    fun include(property: KProperty1<*, *>): Query<E> {
+        val table = DBTable.of(property.getter.parameters.first().type.classifier as KClass<*>)
+
+        if (join == null) join = ""
 
         val clazz = property.returnType.classifier as KClass<*>
 
@@ -56,12 +57,12 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
             other = DBTable.of(property.returnType.arguments.first().type?.classifier as KClass<*>)
             foreignKey = other.foreignKeyByTable[table] ?: throw Exception("${property.name} is not a navigation property")
 
-            join = "left join \"${other.name}\" on ${table.primaryKey.qualifiedName} = ${foreignKey.qualifiedName}"
+            join += "left join \"${other.name}\" on ${table.primaryKey.qualifiedName} = ${foreignKey.qualifiedName} "
         } else { // To one
             other = DBTable.of(clazz)
             foreignKey = table.navigationProperties[property] ?: throw Exception("${property.name} is not a navigation property")
 
-            join = "left join \"${other.name}\" on ${foreignKey.qualifiedName} = ${other.primaryKey.qualifiedName}"
+            join += "left join \"${other.name}\" on ${foreignKey.qualifiedName} = ${other.primaryKey.qualifiedName} "
         }
 
         select += ", ${other.columns.joinToString { it.qualifiedName }}"
