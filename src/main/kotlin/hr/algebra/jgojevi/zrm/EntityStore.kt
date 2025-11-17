@@ -13,14 +13,14 @@ class EntityStore<E : Any> internal constructor(entityClass: KClass<E>, private 
     fun query() = Query(table, database)
 
     // - Convenience methods (to prevent code like this: query().where().fetchAll()
-    fun all() = query().fetchAll()
+    fun all() = query().all()
     fun where(expr: BoolConvertableExpr) = query().where(expr)
     fun include(property: KProperty1<E, *>) = query().include(property)
     fun <T : Any> orderBy(vararg columns: OrderedColumn) = query().orderBy(*columns)
 
     fun find(key: Any?): E?
         = where(EqualExpr(ColumnExpr(table.primaryKey), ConstExpr(key)))
-        .fetchOne()
+        .one()
 
     // - Change Tracking demo
     private val attached = mutableListOf<Entry>()

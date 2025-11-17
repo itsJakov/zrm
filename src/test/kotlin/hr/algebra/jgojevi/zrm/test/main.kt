@@ -62,13 +62,13 @@ fun main() {
 
     val allAlbums = database.albums
         .include(Album::artist)
-        .fetchAll()
+        .all()
 
     val allArtists = database.artists.all()
 
     val allArtistsWithAlbums = database.artists
         .include(Artist::albums)
-        .fetchAll()
+        .all()
 
     println()
 }

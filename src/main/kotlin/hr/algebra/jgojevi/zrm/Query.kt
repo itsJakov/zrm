@@ -78,7 +78,7 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     }
 
     // - Execution
-    fun fetchAll(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection)
-    fun fetchOne(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection)
+    fun all(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection)
+    fun one(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection)
 
 }
