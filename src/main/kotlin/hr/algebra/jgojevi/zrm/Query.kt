@@ -17,6 +17,8 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
 
     private var whereParams: Sequence<Any> = emptySequence()
 
+    private var selectedTables = mutableSetOf<DBTable<*>>(table)
+
     init {
         select = table.columns.joinToString(", ") { it.qualifiedName }
         from = "\"${table.name}\""
@@ -65,6 +67,8 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
             join += "left join \"${other.name}\" on ${foreignKey.qualifiedName} = ${other.primaryKey.qualifiedName} "
         }
 
+        if (!selectedTables.add(other))
+            throw Exception("Query limitation, unable to select/join the same table multiple times :(")
         select += ", ${other.columns.joinToString { it.qualifiedName }}"
 
         return this
