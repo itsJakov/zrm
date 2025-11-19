@@ -49,6 +49,7 @@ data class Album(
     var artistId: Int
 ) {
     var artist: Artist? = null // For now, navigation properties have to be defined outside the primary constructor. Kinda ugly
+    var songs: MutableList<Song>? = null
 }
 
 @Table("songs")
@@ -80,28 +81,12 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val songs = database.songs
-        .query()
-        .include(Song::album)
-        .include(Album::artist)
+    // many Artists -> many Albums -> many Songs
+    val allArtists = database.artists
+        .include(Artist::albums)
+        .include(Album::songs)
+        ._orderByRandom() // Order of the rows shouldn't affect the result
         .all()
-
-    // Album -> one Artist
-//    val allAlbums = database.albums
-//        .include(Album::artist)
-//        .all()
-//
-//    // Song -> one Album -> one Artist
-//    val allSongs = database.songs
-//        .include(Song::album)
-//        .include(Album::artist)
-//        .all()
-//
-//    // Artist -> many Albums
-//    val allArtists = database.artists
-//        .include(Artist::albums)
-//        .all()
-
 
     println()
 }

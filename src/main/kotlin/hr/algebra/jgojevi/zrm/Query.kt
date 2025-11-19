@@ -78,6 +78,11 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
         return this
     }
 
+    fun _orderByRandom(): Query<E> {
+        orderBy = "random()"
+        return this
+    }
+
     // - Execution
     fun all(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection)
     fun one(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection)

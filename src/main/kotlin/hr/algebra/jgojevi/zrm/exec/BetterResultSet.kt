@@ -14,26 +14,7 @@ internal class BetterResultSet(private val resultSet: ResultSet) : AutoCloseable
         = (1 .. metadata.columnCount)
             .associateBy { "\"${resultSet.metaData.getTableName(it)}\".\"${resultSet.metaData.getColumnName(it)}\"" }
 
-    fun forEach(block: (BetterResultSet) -> Unit) {
-        while (resultSet.next()) {
-            block(this)
-        }
-    }
-
-    fun <T> collect(block: (BetterResultSet) -> T): List<T> {
-        val list = mutableListOf<T>()
-        while (resultSet.next()) {
-            list.add(block(this))
-        }
-        return list
-    }
-
-    fun <T> mapOne(block: (BetterResultSet) -> T): T? {
-        if (resultSet.next()) {
-            return block(this)
-        }
-        return null
-    }
+    fun next() = resultSet.next()
 
     fun containsColumn(column: DBColumn<*, *>): Boolean
         = columnsByQualifiedName.containsKey(column.qualifiedName)
