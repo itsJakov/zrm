@@ -18,20 +18,29 @@ internal object DQLExec {
 
         val entity = table.constructor.callBy(params)
 
-        table.tableClass.memberProperties
-            .asSequence()
-            .filter { (it.returnType.classifier as KClass<*>).isSubclassOf(MutableList::class) }
-            .mapNotNull { it as? KMutableProperty1<E, MutableList<Any>?> }
-            .forEach { property ->
+        for (property in table.tableClass.memberProperties) {
+            if ((property.returnType.classifier as KClass<*>).isSubclassOf(MutableList::class)) { // To-many
+                val property = property as? KMutableProperty1<E, MutableList<Any>?> ?: continue
                 val otherTable = DBTable.of(property.returnType.arguments.first().type?.classifier as KClass<*>)
-                if (!rs.containsColumn(otherTable.primaryKey)) return@forEach // Table not joined
+                if (!rs.containsColumn(otherTable.primaryKey)) continue // TODO: Bad way of checking for joins
 
-                var list: MutableList<Any>? = property.get(entity)
+                val list: MutableList<Any>? = property.get(entity)
                 if (list == null) {
-                    list = mutableListOf()
-                    property.set(entity, list)
+                    property.set(entity, mutableListOf())
                 }
+            } else { // To-one
+                val property = property as? KMutableProperty1<E, Any?> ?: continue
+
+                if (!table.navigationProperties.containsKey(property)) continue
+                val otherTable = DBTable.of(property.returnType.classifier as KClass<*>)
+
+                if (!rs.containsColumn(otherTable.primaryKey)) continue
+                if (rs.getObject(otherTable.primaryKey) == null) continue
+
+                val otherEntity = instantiate(otherTable, rs, ctx)
+                property.set(entity, otherEntity)
             }
+        }
 
         return entity
     }

@@ -81,7 +81,20 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    // many Artists -> many Albums -> many Songs
+    // Songs -> one Album -> one Artist
+    val allSongs = database.songs
+        .include(Song::album)
+        .include(Album::artist)
+        .all()
+
+    // Albums -> one Artist
+    //       |-> many Songs
+    val allAlbums = database.albums
+        .include(Album::artist)
+        .include(Album::songs)
+        .all()
+
+    // Artists -> many Albums -> many Songs
     val allArtists = database.artists
         .include(Artist::albums)
         .include(Album::songs)
