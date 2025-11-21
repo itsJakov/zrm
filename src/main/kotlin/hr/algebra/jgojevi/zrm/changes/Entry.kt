@@ -1,4 +1,4 @@
-package hr.algebra.jgojevi.zrm
+package hr.algebra.jgojevi.zrm.changes
 
 import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
@@ -12,7 +12,7 @@ class Entry internal constructor(val entity: Any) {
     var state = State.UNCHANGED
 
     private var values = copyValues()
-    internal var changedColumns = emptyList<DBColumn<Any, *>>()
+    var changedColumns = emptyList<DBColumn<Any, *>>()
         private set
 
     private fun copyValues(): Map<DBColumn<Any, *>, Any?>
@@ -34,7 +34,7 @@ class Entry internal constructor(val entity: Any) {
         this.changedColumns = changedColumns
     }
 
-    fun reset() {
+    internal fun reset() {
         state = State.UNCHANGED
         values = copyValues()
     }

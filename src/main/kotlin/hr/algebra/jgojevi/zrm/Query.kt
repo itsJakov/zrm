@@ -89,6 +89,8 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
 
     // - Execution
     fun all(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection)
+        .apply { forEach { database.attach(it) }} // TODO: Baaaaad, should be the job of DQLExec (what about joins!!??)
     fun one(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection)
+        ?.apply { database.attach(this) }
 
 }

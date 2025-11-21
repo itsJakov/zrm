@@ -1,5 +1,8 @@
 package hr.algebra.jgojevi.zrm
 
+import hr.algebra.jgojevi.zrm.changes.ChangeTracker
+import hr.algebra.jgojevi.zrm.changes.Entry
+import hr.algebra.jgojevi.zrm.exec.DMLExec
 import java.sql.DriverManager
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
@@ -23,6 +26,41 @@ open class Database(connectionString: String) {
             }
 
         this.entityStores = entityStores
+    }
+
+    val changeTracker = ChangeTracker()
+
+    fun detectChanges() = changeTracker.detectChanges()
+    fun saveChanges() {
+        detectChanges()
+        for (entry in changeTracker.entries) {
+            if (entry.state != Entry.State.UNCHANGED) println("${entry.entity} ${entry.state}")
+            when (entry.state) {
+                Entry.State.UNCHANGED -> continue
+                Entry.State.INSERTED -> {
+                    //DMLExec.insert(entry.entity, connection)
+                    entry.reset()
+                }
+                Entry.State.UPDATED -> {
+                    DMLExec.update(entry.entity, entry.changedColumns, connection)
+                    entry.reset()
+                }
+                Entry.State.DELETED -> {
+//                    DMLExec.delete(entry.entity, database.connection)
+                    // probably needs to detach the entity
+                }
+            }
+        }
+    }
+
+    fun attach(entity: Any) = changeTracker.attach(entity)
+
+    fun add(entity: Any) {
+        attach(entity)
+    }
+
+    fun remove(entity: Any) {
+
     }
 
 }

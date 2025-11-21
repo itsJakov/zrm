@@ -81,25 +81,13 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    // Songs -> one Album -> one Artist
-    val allSongs = database.songs
-        .include(Song::album)
-        .include(Album::artist)
-        .all()
+    val song = database.songs.find(23)!!
+    database.saveChanges()
 
-    // Albums -> one Artist
-    //       |-> many Songs
-    val allAlbums = database.albums
-        .include(Album::artist)
-        .include(Album::songs)
-        .all()
+    song.title = "Borderline"
 
-    // Artists -> many Albums -> many Songs
-    val allArtists = database.artists
-        .include(Artist::albums)
-        .include(Album::songs)
-        ._orderByRandom() // Order of the rows shouldn't affect the result
-        .all()
+    database.saveChanges()
+    database.saveChanges()
 
     println()
 }
