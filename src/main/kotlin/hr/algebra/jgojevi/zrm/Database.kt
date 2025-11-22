@@ -31,14 +31,14 @@ open class Database(connectionString: String) {
     val changeTracker = ChangeTracker()
 
     fun detectChanges() = changeTracker.detectChanges()
+
     fun saveChanges() {
         detectChanges()
         for (entry in changeTracker.entries) {
-            if (entry.state != Entry.State.UNCHANGED) println("${entry.entity} ${entry.state}")
             when (entry.state) {
                 Entry.State.UNCHANGED -> continue
                 Entry.State.INSERTED -> {
-                    //DMLExec.insert(entry.entity, connection)
+                    DMLExec.insert(entry.entity, connection)
                     entry.reset()
                 }
                 Entry.State.UPDATED -> {
@@ -46,8 +46,8 @@ open class Database(connectionString: String) {
                     entry.reset()
                 }
                 Entry.State.DELETED -> {
-//                    DMLExec.delete(entry.entity, database.connection)
-                    // probably needs to detach the entity
+                    DMLExec.delete(entry.entity, connection)
+                    changeTracker.detach(entry.entity)
                 }
             }
         }
@@ -56,11 +56,13 @@ open class Database(connectionString: String) {
     fun attach(entity: Any) = changeTracker.attach(entity)
 
     fun add(entity: Any) {
-        attach(entity)
+        val entry = attach(entity)
+        entry.state = Entry.State.INSERTED
     }
 
     fun remove(entity: Any) {
-
+        val entry = attach(entity)
+        entry.state = Entry.State.DELETED
     }
 
 }

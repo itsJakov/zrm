@@ -81,12 +81,20 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val song = database.songs.find(23)!!
+    val newStudent = Student(
+        firstName = "John",
+        lastName = "Doe",
+        enrollmentYear = 1995
+    )
+
+    database.add(newStudent)
+    database.saveChanges()
+    println(newStudent.id)
+
+    newStudent.firstName = "Joe"
     database.saveChanges()
 
-    song.title = "Borderline"
-
-    database.saveChanges()
+    database.remove(newStudent)
     database.saveChanges()
 
     println()

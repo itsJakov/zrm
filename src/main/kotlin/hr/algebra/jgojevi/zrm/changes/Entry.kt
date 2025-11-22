@@ -11,11 +11,11 @@ class Entry internal constructor(val entity: Any) {
     }
     var state = State.UNCHANGED
 
-    private var values = copyValues()
+    private var values = copiedValues()
     var changedColumns = emptyList<DBColumn<Any, *>>()
         private set
 
-    private fun copyValues(): Map<DBColumn<Any, *>, Any?>
+    private fun copiedValues(): Map<DBColumn<Any, *>, Any?>
         = DBTable.of(entity).columns.associateWith { it.get(entity) }
 
     fun detectChanges() {
@@ -26,7 +26,6 @@ class Entry internal constructor(val entity: Any) {
             val current = column.get(entity)
 
             if (current != value) {
-                println("${column.name}: $value -> $current")
                 changedColumns.add(column)
                 state = State.UPDATED
             }
@@ -36,7 +35,7 @@ class Entry internal constructor(val entity: Any) {
 
     internal fun reset() {
         state = State.UNCHANGED
-        values = copyValues()
+        values = copiedValues()
     }
 
 }
