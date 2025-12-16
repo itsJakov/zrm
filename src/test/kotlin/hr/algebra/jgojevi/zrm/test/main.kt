@@ -2,6 +2,7 @@ package hr.algebra.jgojevi.zrm.test
 
 import hr.algebra.jgojevi.zrm.Database
 import hr.algebra.jgojevi.zrm.EntityStore
+import hr.algebra.jgojevi.zrm.migration.DatabaseMigrator
 import hr.algebra.jgojevi.zrm.schema.Column
 import hr.algebra.jgojevi.zrm.schema.ForeignKey
 import hr.algebra.jgojevi.zrm.schema.Key
@@ -81,21 +82,7 @@ class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&p
 fun main() {
     val database = AppDatabase()
 
-    val newStudent = Student(
-        firstName = "John",
-        lastName = "Doe",
-        enrollmentYear = 1995
-    )
-
-    database.add(newStudent)
-    database.saveChanges()
-    println(newStudent.id)
-
-    newStudent.firstName = "Joe"
-    database.saveChanges()
-
-    database.remove(newStudent)
-    database.saveChanges()
+    DatabaseMigrator().migrate(database)
 
     println()
 }

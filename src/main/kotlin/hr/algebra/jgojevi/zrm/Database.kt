@@ -3,6 +3,7 @@ package hr.algebra.jgojevi.zrm
 import hr.algebra.jgojevi.zrm.changes.ChangeTracker
 import hr.algebra.jgojevi.zrm.changes.Entry
 import hr.algebra.jgojevi.zrm.exec.DMLExec
+import hr.algebra.jgojevi.zrm.schema.DBTable
 import java.sql.DriverManager
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty
@@ -27,6 +28,11 @@ open class Database(connectionString: String) {
 
         this.entityStores = entityStores
     }
+
+    internal fun getAllTables() =
+        entityStores.keys.asSequence()
+            .map { DBTable.of(it) }
+
 
     val changeTracker = ChangeTracker()
 
