@@ -72,7 +72,7 @@ data class Song(
     var album: Album? = null
 }
 
-class AppDatabase : Database("jdbc:postgresql://localhost/pepeka?user=postgres&password=Pa55w.rd") {
+class AppDatabase : Database("jdbc:postgresql://localhost/migracije?user=postgres&password=Pa55w.rd") {
     lateinit var students: EntityStore<Student>
     lateinit var artists: EntityStore<Artist>
     lateinit var albums: EntityStore<Album>
