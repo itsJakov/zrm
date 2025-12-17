@@ -32,15 +32,20 @@ class DatabaseMigrator(private val database: Database) {
                 val newColumns = table.columns.associateBy { it.name }
 
                 val alterStatements = mutableListOf<String>()
-
                 for (column in newColumns.values) {
                     val existingColumn = oldColumns[column.name]
                     if (existingColumn == null) {
                         // CREATE COLUMN
-                        // TODO: Adding NOT NULL columns will fail!
                         alterStatements.add("add column ${column.name} ${column.type}${column.modifiers()}")
                     } else {
                         // ALTER COLUMN
+                        if (column.isNotNull != existingColumn.isNotNull) {
+                            if (column.isNotNull) {
+                                alterStatements.add("alter column ${column.name} set not null")
+                            } else {
+                                alterStatements.add("alter column ${column.name} drop not null")
+                            }
+                        }
                     }
                 }
 

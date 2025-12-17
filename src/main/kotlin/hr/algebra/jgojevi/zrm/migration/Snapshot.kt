@@ -23,6 +23,7 @@ data class Snapshot(val version: Int, val tables: List<Table>) {
         val name: String,
         val type: String,
         val isPrimaryKey: Boolean,
+        val isNotNull: Boolean,
         val foreignKey: ForeignKey?
     )
 
@@ -49,15 +50,16 @@ fun Snapshot.Column.Companion.of(dbColumn: DBColumn<*, *>): Snapshot.Column {
         name = dbColumn.name,
         type = type,
         isPrimaryKey = dbColumn.isPrimaryKey,
+        isNotNull = !dbColumn.property.returnType.isMarkedNullable,
         foreignKey = null // TODO
     )
 }
 
 fun Snapshot.Column.modifiers(): String {
     val modifiers = mutableListOf<String>()
-    if (this.isPrimaryKey) {
-        modifiers.add("primary key")
-    }
+
+    if (isPrimaryKey) modifiers.add("primary key")
+    modifiers.add(if (isNotNull) "not null" else "null")
 
     if (modifiers.isEmpty()) return ""
     return " " + modifiers.joinToString(" ")
