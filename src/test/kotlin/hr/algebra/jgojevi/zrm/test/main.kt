@@ -82,7 +82,7 @@ class AppDatabase : Database("jdbc:postgresql://localhost/migracije?user=postgre
 fun main() {
     val database = AppDatabase()
 
-    DatabaseMigrator().migrate(database)
+    DatabaseMigrator(database).migrate()
 
     println()
 }

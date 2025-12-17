@@ -21,8 +21,8 @@ data class Snapshot(val version: Int, val tables: List<Table>) {
     @Serializable
     data class Column(
         val name: String,
-        val type: String, // TODO: Should the SQL be stored in the snapshot?
-        val primaryKey: Boolean,
+        val type: String,
+        val isPrimaryKey: Boolean,
         val foreignKey: ForeignKey?
     )
 
@@ -38,24 +38,29 @@ val typeMapping: Map<KClass<*>, String> = mapOf(
 )
 
 fun Snapshot.Column.Companion.of(dbColumn: DBColumn<*, *>): Snapshot.Column {
-    val type = StringBuilder()
-
     val columnType = dbColumn.property.returnType.classifier as KClass<*>
-    if (dbColumn.isPrimaryKey && columnType == Int::class) {
-        type.append("serial")
+    val type = if (dbColumn.isPrimaryKey && columnType == Int::class) {
+        "serial"
     } else {
-        type.append(typeMapping[columnType]!!)
-    }
-    if (dbColumn.isPrimaryKey) {
-        type.append(" primary key")
+        typeMapping[columnType]!!
     }
 
     return Snapshot.Column(
         name = dbColumn.name,
-        type = type.toString(),
-        primaryKey = dbColumn.isPrimaryKey,
+        type = type,
+        isPrimaryKey = dbColumn.isPrimaryKey,
         foreignKey = null // TODO
     )
+}
+
+fun Snapshot.Column.modifiers(): String {
+    val modifiers = mutableListOf<String>()
+    if (this.isPrimaryKey) {
+        modifiers.add("primary key")
+    }
+
+    if (modifiers.isEmpty()) return ""
+    return " " + modifiers.joinToString(" ")
 }
 
 fun Snapshot.Table.Companion.of(dbTable: DBTable<*>): Snapshot.Table =
