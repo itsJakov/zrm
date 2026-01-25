@@ -38,7 +38,7 @@ val typeMapping: Map<KClass<*>, String> = mapOf(
     Int::class to "int",
 )
 
-fun Snapshot.Column.Companion.of(dbColumn: DBColumn<*, *>): Snapshot.Column {
+fun Snapshot.Column.Companion.of(dbTable: DBTable<*>, dbColumn: DBColumn<*, *>): Snapshot.Column {
     val columnType = dbColumn.property.returnType.classifier as KClass<*>
     val type = if (dbColumn.isPrimaryKey && columnType == Int::class) {
         "serial"
@@ -46,12 +46,26 @@ fun Snapshot.Column.Companion.of(dbColumn: DBColumn<*, *>): Snapshot.Column {
         typeMapping[columnType]!!
     }
 
+    val fk = if (dbColumn.isForeignKey) {
+        val targetClass = dbTable.navigationProperties.entries
+            .first { it.value.name == dbColumn.name }
+            .key
+            .returnType.classifier as KClass<*>
+
+        val targetTable = DBTable.of(targetClass)
+
+        Snapshot.ForeignKey(
+            table = targetTable.name,
+            column = targetTable.primaryKey.name
+        )
+    } else null
+
     return Snapshot.Column(
         name = dbColumn.name,
         type = type,
         isPrimaryKey = dbColumn.isPrimaryKey,
         isNotNull = !dbColumn.property.returnType.isMarkedNullable,
-        foreignKey = null // TODO
+        foreignKey = fk
     )
 }
 
@@ -68,7 +82,7 @@ fun Snapshot.Column.modifiers(): String {
 fun Snapshot.Table.Companion.of(dbTable: DBTable<*>): Snapshot.Table =
     Snapshot.Table(
         name = dbTable.name,
-        columns = dbTable.columns.map { Snapshot.Column.of(it) },
+        columns = dbTable.columns.map { Snapshot.Column.of(dbTable, it) },
     )
 
 fun Snapshot.Companion.take(database: Database): Snapshot {
