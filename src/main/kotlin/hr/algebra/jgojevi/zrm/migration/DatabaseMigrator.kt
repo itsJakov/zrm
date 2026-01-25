@@ -17,6 +17,7 @@ class DatabaseMigrator(private val database: Database) {
         val newTables = newSnapshot.tables.associateBy { it.name }
 
         val upStatements = mutableListOf<String>()
+        val foreignKeyUpStatements = mutableListOf<String>()
 
         for (table in newTables.values) {
             val existingTable = oldTables[table.name]
@@ -26,6 +27,19 @@ class DatabaseMigrator(private val database: Database) {
                     .joinToString { "${it.name} ${it.type}${it.modifiers()}"}
 
                 upStatements.add("create table ${table.name} (${columns});")
+
+                for (column in table.columns) {
+                    if (column.foreignKey != null) {
+                        foreignKeyUpStatements.add("""
+                            alter table ${table.name}
+                            add constraint fk_${column.name}
+                            foreign key (${column.name})
+                            references ${column.foreignKey.table}(${column.foreignKey.column})
+                            on delete cascade
+                            on update cascade;
+                        """.trimIndent())
+                    }
+                }
             } else {
                 // ALTER TABLE
                 val oldColumns = existingTable.columns.associateBy { it.name }
@@ -46,6 +60,23 @@ class DatabaseMigrator(private val database: Database) {
                                 alterStatements.add("alter column ${column.name} drop not null")
                             }
                         }
+
+                        if (column.foreignKey != existingColumn.foreignKey) {
+                            if (existingColumn.foreignKey != null) {
+                                foreignKeyUpStatements.add("alter table ${table.name} drop constraint fk_${column.name};")
+                            }
+
+                            if (column.foreignKey != null) {
+                                foreignKeyUpStatements.add("""
+                                    alter table ${table.name}
+                                    add constraint fk_${column.name}
+                                    foreign key (${column.name})
+                                    references ${column.foreignKey.table}(${column.foreignKey.column})
+                                    on delete cascade
+                                    on update cascade;
+                                """.trimIndent())
+                            }
+                        }
                     }
                 }
 
@@ -63,10 +94,10 @@ class DatabaseMigrator(private val database: Database) {
         for (table in oldTables.values) {
             if (newTables.containsKey(table.name)) continue
             // DROP TABLE
-            upStatements.add("drop table ${table.name};") // TODO: What about foreign keys?
+            upStatements.add("drop table ${table.name};")
         }
 
-        val upSQL = upStatements.joinToString("\n")
+        val upSQL = (upStatements + foreignKeyUpStatements).joinToString("\n")
         println("UP:\n$upSQL")
         DDLExec.inTransaction(upSQL, database.connection)
     }

@@ -4,7 +4,6 @@ import hr.algebra.jgojevi.zrm.Database
 import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlin.reflect.KClass
 
 @Serializable
@@ -13,9 +12,7 @@ data class Snapshot(val version: Int, val tables: List<Table>) {
     @Serializable
     data class Table(
         val name: String,
-        val columns: List<Column>,
-
-        @Transient val alter: Boolean = false
+        val columns: List<Column>
     )
 
     @Serializable
