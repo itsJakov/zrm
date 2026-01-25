@@ -45,7 +45,7 @@ internal object DQLExec {
         return entity
     }
 
-    private fun <E : Any> setNavigation(table: DBTable<E>, entity: E, rs: BetterResultSet, ctx: Ctx) {
+    private fun <E : Any> setInverseNavigation(table: DBTable<E>, entity: E, rs: BetterResultSet, ctx: Ctx) {
         table.tableClass.memberProperties
             .asSequence()
             .filter { (it.returnType.classifier as KClass<*>).isSubclassOf(MutableList::class) }
@@ -63,7 +63,7 @@ internal object DQLExec {
                     e
                 }
 
-                setNavigation(otherTable, other, rs, ctx)
+                setInverseNavigation(otherTable, other, rs, ctx)
             }
     }
 
@@ -87,7 +87,7 @@ internal object DQLExec {
                         e
                     } as E
 
-                    setNavigation(table, entity, rs, ctx)
+                    setInverseNavigation(table, entity, rs, ctx)
                 }
             }
 
