@@ -1,5 +1,6 @@
 package hr.algebra.jgojevi.zrm
 
+import hr.algebra.jgojevi.zrm.changes.ChangeTracker
 import hr.algebra.jgojevi.zrm.exec.DQLExec
 import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
@@ -18,6 +19,8 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
     private var whereParams: Sequence<Any> = emptySequence()
 
     private var selectedTables = mutableSetOf<DBTable<*>>(table)
+
+    private var changeTracker: ChangeTracker? = database.changeTracker
 
     init {
         select = table.columns.joinToString(", ") { it.qualifiedName }
@@ -82,15 +85,18 @@ class Query<E : Any> internal constructor(val table: DBTable<E>, val database: D
         return this
     }
 
+    fun detached(): Query<E> {
+        changeTracker = null
+        return this
+    }
+
     fun _orderByRandom(): Query<E> {
         orderBy = "random()"
         return this
     }
 
     // - Execution
-    fun all(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection)
-        .apply { forEach { database.attach(it) }} // TODO: Baaaaad, should be the job of DQLExec (what about joins!!??)
-    fun one(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection)
-        ?.apply { database.attach(this) }
+    fun all(): List<E> = DQLExec.all(table, buildSQL(), buildParams(), database.connection, changeTracker)
+    fun one(): E? = DQLExec.one(table, buildSQL(), buildParams(), database.connection, changeTracker)
 
 }

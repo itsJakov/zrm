@@ -1,5 +1,6 @@
 package hr.algebra.jgojevi.zrm.exec
 
+import hr.algebra.jgojevi.zrm.changes.ChangeTracker
 import hr.algebra.jgojevi.zrm.schema.DBTable
 import java.sql.Connection
 import kotlin.reflect.KClass
@@ -12,11 +13,18 @@ private typealias Ctx = MutableMap<Pair<DBTable<*>, Any>, Any>  // (Table, Prima
 
 internal object DQLExec {
 
-    private fun <E : Any> instantiate(table: DBTable<E>, rs: BetterResultSet, ctx: Ctx): E {
+    private fun <E : Any> instantiate(table: DBTable<E>, rs: BetterResultSet, ctx: Ctx, changeTracker: ChangeTracker?): E {
+        if (changeTracker != null) {
+            val pk = rs.getObject(table.primaryKey)!!
+            val entity = changeTracker.findEntry(table, pk)
+            if (entity != null) return entity
+        }
+
         val params: Map<KParameter, Any?> = table.constructorParameters
             .mapValues { (_, column) -> rs.getObject(column) }
 
         val entity = table.constructor.callBy(params)
+        changeTracker?.attach(entity)
 
         for (property in table.tableClass.memberProperties) {
             if ((property.returnType.classifier as KClass<*>).isSubclassOf(MutableList::class)) { // To-many
@@ -37,7 +45,7 @@ internal object DQLExec {
                 if (!rs.containsColumn(otherTable.primaryKey)) continue
                 if (rs.getObject(otherTable.primaryKey) == null) continue
 
-                val otherEntity = instantiate(otherTable, rs, ctx)
+                val otherEntity = instantiate(otherTable, rs, ctx, changeTracker)
                 property.set(entity, otherEntity)
             }
         }
@@ -45,7 +53,7 @@ internal object DQLExec {
         return entity
     }
 
-    private fun <E : Any> setInverseNavigation(table: DBTable<E>, entity: E, rs: BetterResultSet, ctx: Ctx) {
+    private fun <E : Any> setInverseNavigation(table: DBTable<E>, entity: E, rs: BetterResultSet, ctx: Ctx, changeTracker: ChangeTracker?) {
         table.tableClass.memberProperties
             .asSequence()
             .filter { (it.returnType.classifier as KClass<*>).isSubclassOf(MutableList::class) }
@@ -58,16 +66,16 @@ internal object DQLExec {
                 val otherPk = rs.getObject(otherTable.primaryKey) ?: return@forEach
 
                 val other = ctx.getOrPut(otherTable to otherPk) {
-                    val e = instantiate(otherTable, rs, ctx)
+                    val e = instantiate(otherTable, rs, ctx, changeTracker)
                     list.add(e)
                     e
                 }
 
-                setInverseNavigation(otherTable, other, rs, ctx)
+                setInverseNavigation(otherTable, other, rs, ctx, changeTracker)
             }
     }
 
-    fun <E : Any> all(table: DBTable<E>, sql: String, sqlParams: Sequence<Any>, conn: Connection): List<E> {
+    fun <E : Any> all(table: DBTable<E>, sql: String, sqlParams: Sequence<Any>, conn: Connection, changeTracker: ChangeTracker?): List<E> {
         println("[DQLExec] $sql")
 
         conn.prepareStatement(sql).use { stmt ->
@@ -82,12 +90,12 @@ internal object DQLExec {
                 while (rs.next()) {
                     val pk = rs.getObject(table.primaryKey)!!
                     val entity = ctx.getOrPut(table to pk) {
-                        val e = instantiate(table, rs, ctx)
+                        val e = instantiate(table, rs, ctx, changeTracker)
                         entities.add(e)
                         e
                     } as E
 
-                    setInverseNavigation(table, entity, rs, ctx)
+                    setInverseNavigation(table, entity, rs, ctx, changeTracker)
                 }
             }
 
@@ -95,9 +103,9 @@ internal object DQLExec {
         }
     }
 
-    fun <E : Any> one(table: DBTable<E>, sql: String, sqlParams: Sequence<Any>, conn: Connection): E? {
+    fun <E : Any> one(table: DBTable<E>, sql: String, sqlParams: Sequence<Any>, conn: Connection, changeTracker: ChangeTracker?): E? {
         // TODO: Do this properly
-        return all(table, sql, sqlParams, conn).firstOrNull()
+        return all(table, sql, sqlParams, conn, changeTracker).firstOrNull()
     }
 
 }

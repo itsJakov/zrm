@@ -28,6 +28,9 @@ class ChangeTracker {
 
     fun entry(entity: Any): Entry? = entities[keyForEntity(entity)]
 
+    internal fun <T : Any> findEntry(table: DBTable<T>, primaryKey: Any) =
+        entities[table to primaryKey]?.entity as T?
+
     val entries: Collection<Entry> get() = entities.values
 
     fun detectChanges() {
