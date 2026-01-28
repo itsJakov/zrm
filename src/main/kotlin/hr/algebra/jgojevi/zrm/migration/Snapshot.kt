@@ -76,6 +76,17 @@ fun Snapshot.Column.modifiers(): String {
     return " " + modifiers.joinToString(" ")
 }
 
+fun Snapshot.Column.addForeignKey(table: Snapshot.Table) =
+    "alter table ${table.name}" +
+        " add constraint fk_$name" +
+        " foreign key ($name)" +
+        " references ${foreignKey!!.table}(${foreignKey.column})" +
+        " on delete cascade" +
+        " on update cascade;"
+
+fun Snapshot.Column.dropForeignKey(table: Snapshot.Table) =
+    "alter table ${table.name} drop constraint fk_$name;"
+
 fun Snapshot.Table.Companion.of(dbTable: DBTable<*>): Snapshot.Table =
     Snapshot.Table(
         name = dbTable.name,

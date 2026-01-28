@@ -30,14 +30,7 @@ class DatabaseMigrator(private val database: Database) {
 
                 for (column in table.columns) {
                     if (column.foreignKey != null) {
-                        foreignKeyUpStatements.add("""
-                            alter table ${table.name}
-                            add constraint fk_${column.name}
-                            foreign key (${column.name})
-                            references ${column.foreignKey.table}(${column.foreignKey.column})
-                            on delete cascade
-                            on update cascade;
-                        """.trimIndent())
+                        foreignKeyUpStatements.add(column.addForeignKey(table))
                     }
                 }
             } else {
@@ -63,18 +56,11 @@ class DatabaseMigrator(private val database: Database) {
 
                         if (column.foreignKey != existingColumn.foreignKey) {
                             if (existingColumn.foreignKey != null) {
-                                foreignKeyUpStatements.add("alter table ${table.name} drop constraint fk_${column.name};")
+                                foreignKeyUpStatements.add(column.dropForeignKey(table))
                             }
 
                             if (column.foreignKey != null) {
-                                foreignKeyUpStatements.add("""
-                                    alter table ${table.name}
-                                    add constraint fk_${column.name}
-                                    foreign key (${column.name})
-                                    references ${column.foreignKey.table}(${column.foreignKey.column})
-                                    on delete cascade
-                                    on update cascade;
-                                """.trimIndent())
+                                foreignKeyUpStatements.add(column.addForeignKey(table))
                             }
                         }
                     }
