@@ -3,8 +3,10 @@ package hr.algebra.jgojevi.zrm.migration
 import hr.algebra.jgojevi.zrm.Database
 import hr.algebra.jgojevi.zrm.schema.DBColumn
 import hr.algebra.jgojevi.zrm.schema.DBTable
+import hr.algebra.jgojevi.zrm.schema.ForeignKey
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KClass
+import kotlin.reflect.full.findAnnotation
 
 @Serializable
 data class Snapshot(val version: Int, val tables: List<Table>) {
@@ -25,7 +27,7 @@ data class Snapshot(val version: Int, val tables: List<Table>) {
     )
 
     @Serializable
-    data class ForeignKey(val table: String, val column: String)
+    data class ForeignKey(val table: String, val column: String, val onUpdate: String, val onDelete: String)
 
 }
 
@@ -43,7 +45,8 @@ fun Snapshot.Column.Companion.of(dbTable: DBTable<*>, dbColumn: DBColumn<*, *>):
         typeMapping[columnType]!!
     }
 
-    val fk = if (dbColumn.isForeignKey) {
+    val foreignKey = dbColumn.property.findAnnotation<ForeignKey>()
+    val fk = if (foreignKey != null) {
         val targetClass = dbTable.navigationProperties.entries
             .first { it.value.name == dbColumn.name }
             .key
@@ -53,7 +56,9 @@ fun Snapshot.Column.Companion.of(dbTable: DBTable<*>, dbColumn: DBColumn<*, *>):
 
         Snapshot.ForeignKey(
             table = targetTable.name,
-            column = targetTable.primaryKey.name
+            column = targetTable.primaryKey.name,
+            onUpdate = foreignKey.onUpdate.sql,
+            onDelete = foreignKey.onDelete.sql
         )
     } else null
 
@@ -81,8 +86,8 @@ fun Snapshot.Column.addForeignKey(table: Snapshot.Table) =
         " add constraint fk_$name" +
         " foreign key ($name)" +
         " references ${foreignKey!!.table}(${foreignKey.column})" +
-        " on delete cascade" +
-        " on update cascade;"
+        " on delete ${foreignKey.onDelete}" +
+        " on update ${foreignKey.onUpdate};"
 
 fun Snapshot.Column.dropForeignKey(table: Snapshot.Table) =
     "alter table ${table.name} drop constraint fk_$name;"
