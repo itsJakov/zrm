@@ -44,8 +44,12 @@ open class Database(connectionString: String) {
             when (entry.state) {
                 Entry.State.UNCHANGED -> continue
                 Entry.State.INSERTED -> {
+                    // This detach/attach dance is here as a quick hack
+                    // Because DMLExec.insert will modify the primary key of the entity,
+                    // The Change Tracker hashmap will use the old primary key value (probably 0)
+                    changeTracker.detach(entry.entity)
                     DMLExec.insert(entry.entity, connection)
-                    entry.reset()
+                    changeTracker.attach(entry.entity)
                 }
                 Entry.State.UPDATED -> {
                     DMLExec.update(entry.entity, entry.changedColumns, connection)
