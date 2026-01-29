@@ -85,7 +85,7 @@ class DatabaseMigrator(private val database: Database) {
 
         val upSQL = (upStatements + foreignKeyUpStatements).joinToString("\n")
         println("UP:\n$upSQL")
-        DDLExec.inTransaction(upSQL, database.connection)
+        DDLExec.execute(upSQL, database.connection)
     }
 
     fun migrate() {
