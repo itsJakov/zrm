@@ -67,7 +67,7 @@ open class Database(connectionString: String) {
     }
 
     fun remove(entity: Any) {
-        val entry = attach(entity)
+        val entry = changeTracker.attachIfNeeded(entity)
         entry.state = Entry.State.DELETED
     }
 

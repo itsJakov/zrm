@@ -15,14 +15,18 @@ class ChangeTracker {
         return table to pk
     }
 
+    class DuplicatePrimaryKeyException : Exception("Entity with same primary key is already attached")
+
     fun attach(entity: Any): Entry {
         val key = keyForEntity(entity)
-        if (entities.containsKey(key)) throw Exception("Entity with same primary key already exists")
+        if (entities.containsKey(key)) throw DuplicatePrimaryKeyException()
 
         val entry = Entry(entity)
         entities[key] = entry
         return entry
     }
+
+    internal fun attachIfNeeded(entity: Any): Entry = entry(entity) ?: attach(entity)
 
     fun detach(entity: Any): Boolean = entities.remove(keyForEntity(entity)) != null
 
