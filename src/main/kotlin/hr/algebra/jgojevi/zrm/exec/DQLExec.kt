@@ -61,6 +61,9 @@ internal object DQLExec {
             .forEach { property ->
                 val otherTable = DBTable.of(property.returnType.arguments.first().type?.classifier as KClass<*>)
                 if (!rs.containsColumn(otherTable.primaryKey)) return@forEach // Table not joined
+                // TODO: Could crash when using tracked entities
+                // If the entity is in the change tracked *without* including inverse navigation entities,
+                // The list won't be initialized and there's gonna be a crash :(
                 val list: MutableList<Any> = property.get(entity)!!
 
                 val otherPk = rs.getObject(otherTable.primaryKey) ?: return@forEach
