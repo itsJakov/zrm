@@ -1,10 +1,12 @@
 package hr.algebra.jgojevi.zrm.test
 
 import hr.algebra.jgojevi.zrm.*
+import hr.algebra.jgojevi.zrm.changes.ChangeTracker
 import hr.algebra.jgojevi.zrm.schema.Column
 import hr.algebra.jgojevi.zrm.schema.ForeignKey
 import hr.algebra.jgojevi.zrm.schema.Key
 import hr.algebra.jgojevi.zrm.schema.Table
+import org.junit.jupiter.api.assertThrows
 
 @Table("students")
 data class Student(
@@ -86,7 +88,7 @@ fun testDQL() {
         .detached()
         .all()
 
-    val ivys = database.students
+    val ivyBrowns = database.students
         .where((Student::firstName eq "Ivy") and (Student::lastName eq "Brown"))
         .detached()
         .all()
@@ -94,7 +96,7 @@ fun testDQL() {
     val expr = ((Student::enrollmentYear gte 2020) and (Student::lastName neq null)) or not(Student::id eq 12)
     expr._debugPrint()
 
-    // Doing this before allArtistsWithDetails will cause an interesting crash
+    // Doing this before allArtistsWithDetails will cause an interesting crash in the next query
 //    val allArtists = database.artists.all()
 
     val allArtistsWithDetails = database.artists
@@ -109,8 +111,53 @@ fun testDQL() {
     println()
 }
 
+fun testDML() {
+    val database = AppDatabase()
+
+    // Add a student
+    val newStudent = Student(
+        firstName = "John",
+        lastName = "Doe",
+        enrollmentYear = 2023
+    )
+    database.add(newStudent)
+    database.saveChanges()
+    println("newStudent ID = ${newStudent.id}")
+
+    // Find that student by ID, should be the same instance in memory
+    val trackedStudent = database.students.find(newStudent.id)
+    assert(newStudent === trackedStudent)
+
+    // Use a query to find that student, unattached so should be a different instance in memory
+    val detachedStudent = database.students
+        .where((Student::firstName eq "John") and (Student::lastName eq "Doe"))
+        .detached()
+        .one()!!
+    assert(detachedStudent !== trackedStudent)
+    assert(detachedStudent.id == newStudent.id)
+    assertThrows<ChangeTracker.DuplicatePrimaryKeyException> { database.attach(detachedStudent) }
+
+    // Delete all students with the last name Miller
+    // zrm can't do this without loading everything into memory
+    val allStudents = database.students.all()
+    allStudents
+        .filter { it.lastName == "Miller" }
+        .forEach { database.remove(it) }
+
+    // Before saving change the new student's name too (same transaction)
+    newStudent.lastName = null
+    database.saveChanges()
+
+    // Remove the new student
+    database.remove(newStudent)
+    database.saveChanges()
+
+    println()
+}
+
 fun main() {
     testDQL()
+    testDML()
 
     println()
 }
