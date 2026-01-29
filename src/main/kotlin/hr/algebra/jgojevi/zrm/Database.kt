@@ -40,24 +40,26 @@ open class Database(connectionString: String) {
 
     fun saveChanges() {
         detectChanges()
-        for (entry in changeTracker.entries) {
-            when (entry.state) {
-                Entry.State.UNCHANGED -> continue
-                Entry.State.INSERTED -> {
-                    // This detach/attach dance is here as a quick hack
-                    // Because DMLExec.insert will modify the primary key of the entity,
-                    // The Change Tracker hashmap will use the old primary key value (probably 0)
-                    changeTracker.detach(entry.entity)
-                    DMLExec.insert(entry.entity, connection)
-                    changeTracker.attach(entry.entity)
-                }
-                Entry.State.UPDATED -> {
-                    DMLExec.update(entry.entity, entry.changedColumns, connection)
-                    entry.reset()
-                }
-                Entry.State.DELETED -> {
-                    DMLExec.delete(entry.entity, connection)
-                    changeTracker.detach(entry.entity)
+        DMLExec.inTransaction(connection) { dml ->
+            for (entry in changeTracker.entries) {
+                when (entry.state) {
+                    Entry.State.UNCHANGED -> continue
+                    Entry.State.INSERTED -> {
+                        // This detach/attach dance is here as a quick hack
+                        // Because DMLExec.insert will modify the primary key of the entity,
+                        // The Change Tracker hashmap will use the old primary key value (probably 0)
+                        changeTracker.detach(entry.entity)
+                        dml.insert(entry.entity)
+                        changeTracker.attach(entry.entity)
+                    }
+                    Entry.State.UPDATED -> {
+                        dml.update(entry.entity, entry.changedColumns)
+                        entry.reset()
+                    }
+                    Entry.State.DELETED -> {
+                        dml.delete(entry.entity)
+                        changeTracker.detach(entry.entity)
+                    }
                 }
             }
         }

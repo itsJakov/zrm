@@ -5,9 +5,23 @@ import hr.algebra.jgojevi.zrm.schema.DBTable
 import java.sql.Connection
 import java.sql.PreparedStatement
 
-internal object DMLExec {
+internal class DMLExec private constructor(val conn: Connection) {
 
-    fun <E : Any> insert(entity: E, conn: Connection) {
+    companion object {
+        fun inTransaction(conn: Connection, block: (DMLExec) -> Unit) {
+            try {
+                conn.autoCommit = false // Ugly
+                block(DMLExec(conn))
+            } catch (e: Exception) {
+                conn.rollback()
+                throw e
+            } finally {
+                conn.autoCommit = true // Acts like a ugly commit()
+            }
+        }
+    }
+
+    fun <E : Any> insert(entity: E) {
         val table = DBTable.of(entity)
         val columns = table.columns.filter { !it.isPrimaryKey }
 
@@ -30,7 +44,7 @@ internal object DMLExec {
         }
     }
 
-    fun <E : Any> update(entity: E, changedColumns: List<DBColumn<E, *>>, conn: Connection) {
+    fun <E : Any> update(entity: E, changedColumns: List<DBColumn<E, *>>) {
         val table = DBTable.of(entity)
         val changes = changedColumns.joinToString { "\"${it.name}\" = ?" }
         val sql = "update \"${table.name}\" set $changes where \"${table.primaryKey.name}\" = ?"
@@ -45,7 +59,7 @@ internal object DMLExec {
         }
     }
 
-    fun <E : Any> delete(entity: E, conn: Connection) {
+    fun <E : Any> delete(entity: E) {
         val table = DBTable.of(entity)
         val sql = "delete from \"${table.name}\" where \"${table.primaryKey.name}\" = ?"
         println("[DMLExec] $sql")
