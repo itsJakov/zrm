@@ -17,13 +17,17 @@ class DatabaseMigrator(private val database: Database) {
         val newTables = newSnapshot.tables.associateBy { it.name }
 
         val upStatements = mutableListOf<String>()
+        val downStatements = mutableListOf<String>()
         val foreignKeyUpStatements = mutableListOf<String>()
+        val foreignKeyDownStatements = mutableListOf<String>()
 
         for (table in newTables.values) {
             val existingTable = oldTables[table.name]
             if (existingTable == null) {
                 // CREATE TABLE
                 upStatements.add(DDLGen.createTable(table))
+                downStatements.add(DDLGen.dropTable(table))
+
                 for (column in table.columns) {
                     if (column.foreignKey != null) {
                         foreignKeyUpStatements.add(DDLGen.addForeignKeyConstraint(table, column))
@@ -34,29 +38,40 @@ class DatabaseMigrator(private val database: Database) {
                 val oldColumns = existingTable.columns.associateBy { it.name }
                 val newColumns = table.columns.associateBy { it.name }
 
-                val alterStatements = mutableListOf<String>()
+                val upAlter = mutableListOf<String>()
+                val downAlter = mutableListOf<String>()
+
                 for (column in newColumns.values) {
                     val existingColumn = oldColumns[column.name]
                     if (existingColumn == null) {
                         // CREATE COLUMN
-                        alterStatements.add(DDLGen.addColumn(column))
+                        upAlter.add(DDLGen.addColumn(column))
+                        downAlter.add(DDLGen.dropColumn(column))
+
+                        if (column.foreignKey != null) {
+                            foreignKeyUpStatements.add(DDLGen.addForeignKeyConstraint(table, column))
+                        }
                     } else {
                         // ALTER COLUMN
                         if (column.isNotNull != existingColumn.isNotNull) {
                             if (column.isNotNull) {
-                                alterStatements.add(DDLGen.setNotNull(column))
+                                upAlter.add(DDLGen.setNotNull(column))
+                                downAlter.add(DDLGen.dropNotNull(column))
                             } else {
-                                alterStatements.add(DDLGen.dropNotNull(column))
+                                upAlter.add(DDLGen.dropNotNull(column))
+                                downAlter.add(DDLGen.setNotNull(column))
                             }
                         }
 
                         if (column.foreignKey != existingColumn.foreignKey) {
                             if (existingColumn.foreignKey != null) {
-                                foreignKeyUpStatements.add(DDLGen.dropForeignKeyConstraint(table, column))
+                                foreignKeyUpStatements.add(DDLGen.dropForeignKeyConstraint(table, existingColumn))
+                                foreignKeyDownStatements.add(DDLGen.addForeignKeyConstraint(table, existingColumn))
                             }
 
                             if (column.foreignKey != null) {
                                 foreignKeyUpStatements.add(DDLGen.addForeignKeyConstraint(table, column))
+                                foreignKeyDownStatements.add(DDLGen.dropForeignKeyConstraint(table, column))
                             }
                         }
                     }
@@ -65,11 +80,19 @@ class DatabaseMigrator(private val database: Database) {
                 for (column in oldColumns.values) {
                     if (newColumns.containsKey(column.name)) continue
                     // DROP COLUMN
-                    alterStatements.add(DDLGen.dropColumn(column))
+                    upAlter.add(DDLGen.dropColumn(column))
+                    downAlter.add(DDLGen.addColumn(column))
+
+                    if (column.foreignKey != null) {
+                        foreignKeyDownStatements.add(DDLGen.addForeignKeyConstraint(table, column))
+                    }
                 }
 
-                if (alterStatements.isEmpty()) continue
-                upStatements.add(DDLGen.alterTable(table, alterStatements))
+                if (!upAlter.isEmpty())
+                    upStatements.add(DDLGen.alterTable(table, upAlter))
+
+                if (!downAlter.isEmpty())
+                    downStatements.add(DDLGen.alterTable(table, downAlter))
             }
         }
 
@@ -77,11 +100,25 @@ class DatabaseMigrator(private val database: Database) {
             if (newTables.containsKey(table.name)) continue
             // DROP TABLE
             upStatements.add(DDLGen.dropTable(table))
+            downStatements.add(DDLGen.createTable(table))
+
+            for (column in table.columns) {
+                if (column.foreignKey != null) {
+                    foreignKeyDownStatements.add(DDLGen.addForeignKeyConstraint(table, column))
+                }
+            }
         }
 
         val upSQL = (upStatements + foreignKeyUpStatements).joinToString("\n")
         println("UP:\n$upSQL")
         DDLExec.execute(upSQL, database.connection)
+
+        val downSQL = (downStatements + foreignKeyDownStatements).joinToString("\n")
+        println("DOWN:\n$downSQL")
+
+        val file = File("target/_down.sql")
+        file.parentFile.mkdirs()
+        file.appendText("\n--\n$downSQL")
     }
 
     fun migrate() {
