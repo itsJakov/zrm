@@ -23,14 +23,10 @@ class DatabaseMigrator(private val database: Database) {
             val existingTable = oldTables[table.name]
             if (existingTable == null) {
                 // CREATE TABLE
-                val columns = table.columns
-                    .joinToString { "${it.name} ${it.type}${it.modifiers()}"}
-
-                upStatements.add("create table ${table.name} (${columns});")
-
+                upStatements.add(DDLGen.createTable(table))
                 for (column in table.columns) {
                     if (column.foreignKey != null) {
-                        foreignKeyUpStatements.add(column.addForeignKey(table))
+                        foreignKeyUpStatements.add(DDLGen.addForeignKeyConstraint(table, column))
                     }
                 }
             } else {
@@ -43,24 +39,24 @@ class DatabaseMigrator(private val database: Database) {
                     val existingColumn = oldColumns[column.name]
                     if (existingColumn == null) {
                         // CREATE COLUMN
-                        alterStatements.add("add column ${column.name} ${column.type}${column.modifiers()}")
+                        alterStatements.add(DDLGen.addColumn(column))
                     } else {
                         // ALTER COLUMN
                         if (column.isNotNull != existingColumn.isNotNull) {
                             if (column.isNotNull) {
-                                alterStatements.add("alter column ${column.name} set not null")
+                                alterStatements.add(DDLGen.setNotNull(column))
                             } else {
-                                alterStatements.add("alter column ${column.name} drop not null")
+                                alterStatements.add(DDLGen.dropNotNull(column))
                             }
                         }
 
                         if (column.foreignKey != existingColumn.foreignKey) {
                             if (existingColumn.foreignKey != null) {
-                                foreignKeyUpStatements.add(column.dropForeignKey(table))
+                                foreignKeyUpStatements.add(DDLGen.dropForeignKeyConstraint(table, column))
                             }
 
                             if (column.foreignKey != null) {
-                                foreignKeyUpStatements.add(column.addForeignKey(table))
+                                foreignKeyUpStatements.add(DDLGen.addForeignKeyConstraint(table, column))
                             }
                         }
                     }
@@ -69,18 +65,18 @@ class DatabaseMigrator(private val database: Database) {
                 for (column in oldColumns.values) {
                     if (newColumns.containsKey(column.name)) continue
                     // DROP COLUMN
-                    alterStatements.add("drop column ${column.name}")
+                    alterStatements.add(DDLGen.dropColumn(column))
                 }
 
                 if (alterStatements.isEmpty()) continue
-                upStatements.add("alter table ${table.name} ${alterStatements.joinToString()};")
+                upStatements.add(DDLGen.alterTable(table, alterStatements))
             }
         }
 
         for (table in oldTables.values) {
             if (newTables.containsKey(table.name)) continue
             // DROP TABLE
-            upStatements.add("drop table ${table.name};")
+            upStatements.add(DDLGen.dropTable(table))
         }
 
         val upSQL = (upStatements + foreignKeyUpStatements).joinToString("\n")
