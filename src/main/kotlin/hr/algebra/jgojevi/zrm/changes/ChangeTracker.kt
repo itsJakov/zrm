@@ -32,6 +32,7 @@ class ChangeTracker {
 
     fun entry(entity: Any): Entry? = entities[keyForEntity(entity)]
 
+    @Suppress("UNCHECKED_CAST") // The hashmap will ensure type consistency
     internal fun <T : Any> findEntry(table: DBTable<T>, primaryKey: Any) =
         entities[table to primaryKey]?.entity as T?
 

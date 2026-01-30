@@ -17,6 +17,7 @@ class DBColumn<E : Any, T> private constructor(internal val property: KProperty1
                 return column
             }
 
+        @Suppress("UNCHECKED_CAST") // The columns hashmap will ensure type consistency
         fun <E : Any, T> of(property: KProperty1<E, T>): DBColumn<E, T>
             = synchronized(columns) {
                 val column = columns[property]

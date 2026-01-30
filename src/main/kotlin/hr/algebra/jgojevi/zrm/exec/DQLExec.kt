@@ -92,6 +92,7 @@ internal object DQLExec {
             stmt.executeBetterQuery().use { rs ->
                 while (rs.next()) {
                     val pk = rs.getObject(table.primaryKey)!!
+                    @Suppress("UNCHECKED_CAST") // Ctx will ensure type consistency
                     val entity = ctx.getOrPut(table to pk) {
                         val e = instantiate(table, rs, ctx, changeTracker)
                         entities.add(e)

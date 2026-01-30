@@ -14,6 +14,7 @@ class DBTable<E : Any> private constructor(internal val tableClass: KClass<E>) {
 
         fun <E : Any> of(entityClass: KClass<out E>): DBTable<E>
             = synchronized(tables) {
+                @Suppress("UNCHECKED_CAST") // The tables hashmap will ensure type consistency
                 tables.getOrPut(entityClass) {
                     DBTable(entityClass)
                 } as DBTable<E>
